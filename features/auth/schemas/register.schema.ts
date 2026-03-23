@@ -1,13 +1,27 @@
-import { z } from "zod/v4";
+import { IsEmail, MinLength, Validate, ValidatorConstraint, ValidatorConstraintInterface, ValidationArguments } from "class-validator";
 
-export const registerSchema = z.object({
-  name: z.string().min(2, "Minimum 2 caractères"),
-  email: z.email("Email invalide"),
-  password: z.string().min(6, "Minimum 6 caractères"),
-  confirmPassword: z.string(),
-}).check(
-  ctx => ctx.value.password === ctx.value.confirmPassword,
-  "Les mots de passe ne correspondent pas"
-);
+@ValidatorConstraint({ name: "matchPasswords", async: false })
+class MatchPasswordsConstraint implements ValidatorConstraintInterface {
+  validate(confirmPassword: string, args: ValidationArguments): boolean {
+    const obj = args.object as RegisterFormData;
+    return confirmPassword === obj.password;
+  }
 
-export type RegisterFormData = z.infer<typeof registerSchema>;
+  defaultMessage(): string {
+    return "Les mots de passe ne correspondent pas";
+  }
+}
+
+export class RegisterFormData {
+  @MinLength(2, { message: "Minimum 2 caractères" })
+  name: string = "";
+
+  @IsEmail({}, { message: "Email invalide" })
+  email: string = "";
+
+  @MinLength(6, { message: "Minimum 6 caractères" })
+  password: string = "";
+
+  @Validate(MatchPasswordsConstraint)
+  confirmPassword: string = "";
+}

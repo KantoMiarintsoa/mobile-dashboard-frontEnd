@@ -1,17 +1,29 @@
-import { z } from "zod/v4";
+import { IsEmail, IsOptional, MinLength } from "class-validator";
 
-export const createUserSchema = z.object({
-  name: z.string().min(2, "Minimum 2 caractères"),
-  email: z.email("Email invalide"),
-  password: z.string().min(6, "Minimum 6 caractères"),
-  role: z.string().min(1, "Rôle requis"),
-});
+export class CreateUserFormData {
+  @MinLength(2, { message: "Minimum 2 caractères" })
+  name: string = "";
 
-export const updateUserSchema = z.object({
-  name: z.string().min(2, "Minimum 2 caractères").optional(),
-  email: z.email("Email invalide").optional(),
-  role: z.string().min(1, "Rôle requis").optional(),
-});
+  @IsEmail({}, { message: "Email invalide" })
+  email: string = "";
 
-export type CreateUserFormData = z.infer<typeof createUserSchema>;
-export type UpdateUserFormData = z.infer<typeof updateUserSchema>;
+  @MinLength(6, { message: "Minimum 6 caractères" })
+  password: string = "";
+
+  @MinLength(1, { message: "Rôle requis" })
+  role: string = "";
+}
+
+export class UpdateUserFormData {
+  @IsOptional()
+  @MinLength(2, { message: "Minimum 2 caractères" })
+  name?: string = "";
+
+  @IsOptional()
+  @IsEmail({}, { message: "Email invalide" })
+  email?: string = "";
+
+  @IsOptional()
+  @MinLength(1, { message: "Rôle requis" })
+  role?: string = "";
+}

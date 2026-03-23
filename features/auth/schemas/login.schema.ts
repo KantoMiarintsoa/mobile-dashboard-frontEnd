@@ -1,8 +1,9 @@
-import { z } from "zod/v4";
+import { IsEmail, MinLength } from "class-validator";
 
-export const loginSchema = z.object({
-  email: z.email("Email invalide"),
-  password: z.string().min(6, "Minimum 6 caractères"),
-});
+export class LoginFormData {
+  @IsEmail({}, { message: "Email invalide" })
+  email: string = "";
 
-export type LoginFormData = z.infer<typeof loginSchema>;
+  @MinLength(6, { message: "Minimum 6 caractères" })
+  password: string = "";
+}
