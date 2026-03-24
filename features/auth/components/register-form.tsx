@@ -8,6 +8,7 @@ import { useRegister } from "@/features/auth/hooks/use-register";
 import { RegisterFormData } from "@/features/auth/schemas/register.schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 
@@ -58,12 +59,12 @@ export function RegisterForm() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">Mot de passe</Label>
-            <Input id="password" type="password" {...register("password")} />
+            <PasswordInput id="password" {...register("password")} />
             {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-            <Input id="confirmPassword" type="password" {...register("confirmPassword")} />
+            <PasswordInput id="confirmPassword" {...register("confirmPassword")} />
             {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>}
           </div>
           {isError && (

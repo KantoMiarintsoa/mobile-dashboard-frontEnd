@@ -9,5 +9,5 @@ export const authService = {
     api.post<AuthResponse>("/users/register", data).then((res) => res.data),
 
   me: () =>
-    api.get<AuthResponse["user"]>("/users/me").then((res) => res.data),
+    api.get("/users/me").then((res) => res.data),
 };

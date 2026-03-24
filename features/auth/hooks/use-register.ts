@@ -6,7 +6,7 @@ export function useRegister() {
   return useMutation({
     mutationFn: (data: RegisterRequest) => authService.register(data),
     onSuccess: (data) => {
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", data.access_token);
     },
   });
 }
