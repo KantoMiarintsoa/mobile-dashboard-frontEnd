@@ -15,7 +15,7 @@ export async function replayQueue() {
       }
       await db.syncQueue.delete(item.id!);
     } catch {
-      break; // arrete si le serveur est encore down
+      break;
     }
   }
 }

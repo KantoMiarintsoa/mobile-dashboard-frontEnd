@@ -13,6 +13,7 @@ Dashboard de gestion d'utilisateurs avec une interface mobile-first, construit a
 - **Class Validator** - Validation des donnees avec decorateurs TypeScript
 - **Axios** - Client HTTP avec intercepteur JWT
 - **js-cookie** - Stockage du token JWT dans les cookies
+- **Dexie.js** - Base de données IndexedDB pour le support offline
 - **Lucide React** - Icones
 
 ## Fonctionnalites
@@ -28,6 +29,37 @@ Dashboard de gestion d'utilisateurs avec une interface mobile-first, construit a
 - Bouton rafraichir avec animation et skeleton
 - Validation des formulaires avec class-validator
 - Theme violet clair et blanc
+- **Support offline-first** (fonctionne sans connexion internet)
+
+## Support Offline-First
+
+L'application fonctionne même sans connexion internet grâce à une approche **offline-first** :
+
+### Comment ça marche ?
+
+1. **Base de données locale (IndexedDB via Dexie.js)**
+   - Les données des utilisateurs sont stockées localement dans le navigateur (`lib/db.ts`)
+   - Deux tables : `users` pour les utilisateurs et `syncQueue` pour les actions en attente
+
+2. **Lecture des données**
+   - **En ligne** : l'app récupère les données depuis l'API et met à jour le cache local
+   - **Hors ligne** : l'app lit directement depuis la base locale (IndexedDB)
+
+3. **Écriture des données (create / update / delete)**
+   - **En ligne** : l'action est envoyée à l'API normalement
+   - **Hors ligne** : l'action est sauvegardée dans une **file d'attente de synchronisation** (`syncQueue`) et appliquée localement pour que l'utilisateur voie le changement immédiatement
+
+4. **Synchronisation au retour en ligne**
+   - La fonction `replayQueue()` (`lib/sync.ts`) rejoue toutes les actions en attente vers l'API dans l'ordre chronologique
+   - Les actions réussies sont supprimées de la file d'attente
+
+### Fichiers concernés
+
+| Fichier | Rôle |
+|---------|------|
+| `lib/db.ts` | Définition de la base IndexedDB (tables `users` et `syncQueue`) |
+| `lib/sync.ts` | Logique de synchronisation : `replayQueue()` et `isOnline()` |
+| `service/user.service.ts` | Service utilisateur avec fallback offline pour chaque opération CRUD |
 
 ## Architecture
 
