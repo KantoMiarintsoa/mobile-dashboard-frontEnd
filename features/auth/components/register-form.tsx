@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Cookies from "js-cookie";
 import { useForm } from "react-hook-form";
 import { classValidatorResolver } from "@hookform/resolvers/class-validator";
 import { useRegister } from "@/features/auth/hooks/use-register";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 const resolver = classValidatorResolver(RegisterFormData);
 
@@ -35,54 +36,63 @@ export function RegisterForm() {
         email: formData.get("email") as string,
         password: formData.get("password") as string,
       },
-      { onSuccess: () => router.push("/dashboard") },
+      {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onSuccess: (response: any) => {
+          const token = response.access_token || response.token || response.accessToken;
+          if (token) {
+            Cookies.set("token", token, { expires: 7 });
+          }
+          router.push("/dashboard");
+        },
+      },
     );
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Inscription</CardTitle>
-        <CardDescription>Créez votre compte</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="flex flex-col gap-4">
+    <Card className="border-0 shadow-lg">
+      <CardContent className="px-6 py-8 sm:px-10 sm:py-10">
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <h1 className="text-2xl font-bold tracking-tight">Créer un compte</h1>
+          <p className="text-sm text-muted-foreground">Remplissez vos informations</p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="name">Nom</Label>
-            <Input id="name" {...register("name")} />
+            <Input id="name" placeholder="Votre nom" className="h-11" {...register("name")} />
             {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register("email")} />
+            <Input id="email" type="email" placeholder="exemple@email.com" className="h-11" {...register("email")} />
             {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">Mot de passe</Label>
-            <PasswordInput id="password" {...register("password")} />
+            <PasswordInput id="password" placeholder="••••••••" className="h-11" {...register("password")} />
             {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-            <PasswordInput id="confirmPassword" {...register("confirmPassword")} />
+            <PasswordInput id="confirmPassword" placeholder="••••••••" className="h-11" {...register("confirmPassword")} />
             {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>}
           </div>
           {isError && (
-            <p className="text-sm text-red-500">Erreur lors de l&apos;inscription</p>
+            <p className="text-sm text-red-500 text-center">Erreur lors de l&apos;inscription</p>
           )}
-        </CardContent>
-        <CardFooter className="flex flex-col gap-2">
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button type="submit" className="w-full h-11 text-base mt-2" disabled={isPending}>
             {isPending ? "Inscription..." : "S'inscrire"}
           </Button>
-          <p className="text-sm text-muted-foreground">
-            Déjà un compte ?{" "}
-            <Link href="/login" className="text-primary underline">
-              Se connecter
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
+        </form>
+
+        <p className="text-sm text-muted-foreground text-center mt-6">
+          Déjà un compte ?{" "}
+          <Link href="/login" className="text-primary font-medium underline">
+            Se connecter
+          </Link>
+        </p>
+      </CardContent>
     </Card>
   );
 }

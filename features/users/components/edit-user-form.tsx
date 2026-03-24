@@ -32,7 +32,7 @@ export function EditUserForm({ id }: EditUserFormProps) {
 
   useEffect(() => {
     if (user) {
-      reset({ name: user.name, email: user.email, role: user.role });
+      reset({ name: user.name, email: user.email });
     }
   }, [user, reset]);
 
@@ -40,7 +40,6 @@ export function EditUserForm({ id }: EditUserFormProps) {
     const formData = new FormData();
     if (data.name) formData.append("name", data.name);
     if (data.email) formData.append("email", data.email);
-    if (data.role) formData.append("role", data.role);
 
     mutate(
       {
@@ -48,7 +47,6 @@ export function EditUserForm({ id }: EditUserFormProps) {
         data: {
           name: formData.get("name") as string | undefined,
           email: formData.get("email") as string | undefined,
-          role: formData.get("role") as string | undefined,
         },
       },
       { onSuccess: () => router.push(`/users/${id}`) },
@@ -80,11 +78,6 @@ export function EditUserForm({ id }: EditUserFormProps) {
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" {...register("email")} />
               {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="role">Rôle</Label>
-              <Input id="role" {...register("role")} />
-              {errors.role && <p className="text-sm text-red-500">{errors.role.message}</p>}
             </div>
             {isError && (
               <p className="text-sm text-red-500">Erreur lors de la mise à jour</p>

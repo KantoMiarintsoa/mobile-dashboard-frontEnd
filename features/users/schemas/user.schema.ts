@@ -9,9 +9,6 @@ export class CreateUserFormData {
 
   @MinLength(6, { message: "Minimum 6 caractères" })
   password: string = "";
-
-  @MinLength(1, { message: "Rôle requis" })
-  role: string = "";
 }
 
 export class UpdateUserFormData {
@@ -22,8 +19,4 @@ export class UpdateUserFormData {
   @IsOptional()
   @IsEmail({}, { message: "Email invalide" })
   email?: string = "";
-
-  @IsOptional()
-  @MinLength(1, { message: "Rôle requis" })
-  role?: string = "";
 }

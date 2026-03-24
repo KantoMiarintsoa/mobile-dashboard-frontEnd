@@ -28,14 +28,12 @@ export function CreateUserForm() {
     formData.append("name", data.name);
     formData.append("email", data.email);
     formData.append("password", data.password);
-    formData.append("role", data.role);
 
     mutate(
       {
         name: formData.get("name") as string,
         email: formData.get("email") as string,
         password: formData.get("password") as string,
-        role: formData.get("role") as string,
       },
       { onSuccess: () => router.push("/users") },
     );
@@ -69,11 +67,6 @@ export function CreateUserForm() {
               <Label htmlFor="password">Mot de passe</Label>
               <PasswordInput id="password" {...register("password")} />
               {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="role">Rôle</Label>
-              <Input id="role" {...register("role")} />
-              {errors.role && <p className="text-sm text-red-500">{errors.role.message}</p>}
             </div>
             {isError && (
               <p className="text-sm text-red-500">Erreur lors de la création</p>

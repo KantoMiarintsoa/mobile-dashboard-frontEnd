@@ -1,61 +1,129 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useUser } from "@/features/users/hooks/use-users";
 import { useQueryClient } from "@tanstack/react-query";
+import { UserFormModal } from "./user-form-modal";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserDetailProps {
   id: string;
 }
 
+function DetailSkeleton() {
+  return (
+    <div className="flex-1 flex items-center justify-center px-4">
+      <Card className="w-full max-w-md border-0 shadow-lg">
+        <CardContent className="px-6 py-8 flex flex-col items-center gap-5">
+          <Skeleton className="h-20 w-20 rounded-full" />
+          <Skeleton className="h-6 w-36" />
+          <div className="w-full flex flex-col gap-3 mt-2">
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-28" />
+            </div>
+          </div>
+          <Skeleton className="h-9 w-full mt-2" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function UserDetail({ id }: UserDetailProps) {
-  const { data: user, isLoading } = useUser(id);
+  const { data: user, isLoading, isFetching } = useUser(id);
   const queryClient = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(false);
 
   const handleRefresh = () => {
+    setShowSkeleton(true);
     queryClient.invalidateQueries({ queryKey: ["users", id] });
   };
 
-  if (isLoading) return <p className="p-4 text-muted-foreground">Chargement...</p>;
-  if (!user) return <p className="p-4">Utilisateur introuvable</p>;
+  const isRefreshing = showSkeleton && isFetching;
+
+  useEffect(() => {
+    if (showSkeleton && !isFetching) {
+      setShowSkeleton(false);
+    }
+  }, [showSkeleton, isFetching]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-col gap-4 min-h-[calc(100vh-8rem)]">
+      <div className="flex items-center gap-2">
         <Link href="/users">
-          <Button variant="ghost" size="sm">&larr; Retour</Button>
+          <Button variant="ghost" size="icon">
+            <ArrowLeft className="size-5" />
+          </Button>
         </Link>
         <h1 className="text-xl font-bold md:text-2xl">Détail utilisateur</h1>
-        <Button variant="outline" size="sm" className="ml-auto" onClick={handleRefresh}>
-          Rafraichir
+        <Button
+          variant="outline"
+          size="icon"
+          className="ml-auto"
+          onClick={handleRefresh}
+          disabled={isFetching}
+          title="Rafraichir"
+        >
+          <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
         </Button>
       </div>
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle>{user.name}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2 text-sm">
-          <div>
-            <span className="font-medium">Email : </span>
-            {user.email}
-          </div>
-          <div>
-            <span className="font-medium">Rôle : </span>
-            {user.role}
-          </div>
-          <div>
-            <span className="font-medium">Créé le : </span>
-            {new Date(user.createdAt).toLocaleDateString("fr-FR")}
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Link href={`/users/${user.id}/edit`} className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto">Modifier</Button>
-          </Link>
-        </CardFooter>
-      </Card>
+
+      {isLoading || isRefreshing ? (
+        <DetailSkeleton />
+      ) : !user ? (
+        <p className="p-4 text-center">Utilisateur introuvable</p>
+      ) : (
+        <div className="flex-1 flex items-center justify-center px-4">
+          <Card className="w-full max-w-md border-0 shadow-lg">
+            <CardContent className="px-6 py-8 flex flex-col items-center gap-4">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary text-3xl font-bold">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <h2 className="text-xl font-bold">{user.name}</h2>
+
+              <div className="w-full border-t mt-2 pt-4 flex flex-col gap-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-medium text-muted-foreground">Email</span>
+                  <span>{user.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-muted-foreground">Créé le</span>
+                  <span>{new Date(user.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-muted-foreground">Modifié le</span>
+                  <span>{user.updatedAt ? new Date(user.updatedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—"}</span>
+                </div>
+              </div>
+
+              <Button className="mt-4 w-full" onClick={() => setEditOpen(true)}>
+                Modifier
+              </Button>
+            </CardContent>
+          </Card>
+
+          <UserFormModal
+            open={editOpen}
+            onClose={() => setEditOpen(false)}
+            mode="edit"
+            user={user}
+          />
+        </div>
+      )}
     </div>
   );
 }
