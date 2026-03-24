@@ -6,6 +6,8 @@ import Link from "next/link";
 import Cookies from "js-cookie";
 import { LayoutDashboard, Users, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useOnlineSync } from "@/features/users/hooks/use-online-sync";
+
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -13,6 +15,7 @@ const navItems = [
 ];
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  useOnlineSync();
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
