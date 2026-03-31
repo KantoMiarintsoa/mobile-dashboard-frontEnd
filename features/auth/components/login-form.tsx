@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Cookies from "js-cookie";
 import { useForm } from "react-hook-form";
 import { classValidatorResolver } from "@hookform/resolvers/class-validator";
@@ -82,12 +81,6 @@ export function LoginForm() {
           </Button>
         </form>
 
-        <p className="text-sm text-muted-foreground text-center mt-6">
-          Pas de compte ?{" "}
-          <Link href="/register" className="text-primary font-medium underline">
-            S&apos;inscrire
-          </Link>
-        </p>
       </CardContent>
     </Card>
   );

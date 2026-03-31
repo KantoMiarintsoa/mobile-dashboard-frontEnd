@@ -26,7 +26,7 @@ export const userService = {
 
   create: async (data: CreateUserDto): Promise<User> => {
     try {
-      const res = await api.post<User>("/users/register", data);
+      const res = await api.post<User>("/users/create", data);
       await db.users.put(res.data);
       return res.data;
     } catch {
@@ -41,7 +41,7 @@ export const userService = {
       await db.users.put(tempUser);
       await db.syncQueue.add({
         action: "create",
-        endpoint: "/users/register",
+        endpoint: "/users/create",
         method: "POST",
         data: data as unknown,
         timestamp: Date.now(),
