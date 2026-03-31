@@ -17,4 +17,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Intercepteur : si 401, supprimer le token et rediriger vers login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      Cookies.remove("token");
+      if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

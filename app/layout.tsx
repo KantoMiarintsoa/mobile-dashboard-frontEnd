@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import QueryProvider from "@/providers/query-provider";
+import ThemeProvider from "@/providers/theme-provider";
+import LocaleProvider from "@/providers/locale-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -28,10 +30,15 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <QueryProvider>{children}</QueryProvider>
-        <Toaster richColors position="top-right" />
+        <ThemeProvider>
+          <LocaleProvider>
+            <QueryProvider>{children}</QueryProvider>
+            <Toaster richColors position="top-right" />
+          </LocaleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
