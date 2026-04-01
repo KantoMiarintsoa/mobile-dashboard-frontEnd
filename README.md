@@ -13,12 +13,14 @@ Dashboard de gestion d'utilisateurs avec une interface mobile-first, construit a
 - **Class Validator** - Validation des donnees avec decorateurs TypeScript
 - **Axios** - Client HTTP avec intercepteur JWT
 - **js-cookie** - Stockage du token JWT dans les cookies
-- **Dexie.js** - Base de données IndexedDB pour le support offline
+- **Dexie.js** - Base de donnees IndexedDB pour le support offline
+- **Socket.IO Client** - WebSocket pour les notifications en temps reel
+- **next-themes** - Mode dark/light
 - **Lucide React** - Icones
 
 ## Fonctionnalites
 
-- Authentification (login / register) avec JWT stocke dans les cookies
+- Authentification (login) avec JWT stocke dans les cookies
 - CRUD utilisateurs complet (creation, lecture, modification, suppression)
 - Interface mobile-first responsive (cartes sur mobile, table sur desktop)
 - Sidebar avec navigation (cachee sur mobile, menu hamburger)
@@ -30,6 +32,9 @@ Dashboard de gestion d'utilisateurs avec une interface mobile-first, construit a
 - Validation des formulaires avec class-validator
 - Theme violet clair et blanc
 - **Support offline-first** (fonctionne sans connexion internet)
+- **Notifications en temps reel** via WebSocket (Socket.IO)
+- **Mode dark/light** avec next-themes
+- **Multilingue** (FR/EN)
 
 ## Support Offline-First
 
@@ -61,6 +66,58 @@ L'application fonctionne même sans connexion internet grâce à une approche **
 | `lib/sync.ts` | Logique de synchronisation : `replayQueue()` et `isOnline()` |
 | `service/user.service.ts` | Service utilisateur avec fallback offline pour chaque opération CRUD |
 
+## WebSocket - Notifications en temps reel
+
+Le frontend se connecte au backend via **Socket.IO** pour recevoir les notifications en temps reel quand un utilisateur est cree, modifie ou supprime.
+
+### Installation
+
+```bash
+pnpm add socket.io-client
+```
+
+### Comment ca marche
+
+1. Au login, le `SocketProvider` se connecte au serveur WebSocket (`http://localhost:3002`)
+2. Le hook `useUsersRealtime` ecoute les evenements `user:created`, `user:updated`, `user:deleted`
+3. A chaque evenement : le cache React Query est invalide + un toast apparait + la notification est ajoutee a la liste
+4. Les notifications existantes sont chargees depuis l'API `GET /api/notifications` au montage
+
+### Ou voir les notifications
+
+- **Icone cloche** (en haut a droite) : badge rouge avec le nombre de non-lues, clic pour ouvrir le dropdown
+- **Sidebar** (desktop) et **menu mobile** : liste des 5 dernieres notifications
+
+### Fichiers concernes
+
+| Fichier | Role |
+|---|---|
+| `lib/socket.ts` | Singleton Socket.IO client avec auth JWT |
+| `providers/socket-provider.tsx` | Context React pour la connexion WebSocket |
+| `providers/notifications-provider.tsx` | Context pour partager les notifications |
+| `hooks/use-notifications.ts` | Hook : charge depuis l'API + gere l'etat local |
+| `features/users/hooks/use-users-realtime.ts` | Ecoute les evenements WebSocket et ajoute les notifications |
+| `features/users/hooks/use-online-sync.ts` | Combine sync offline + ecoute temps reel |
+| `service/notification.service.ts` | Appels API : GET /notifications, PATCH /notifications/read |
+
+### Evenements ecoutes
+
+| Evenement | Action dans le frontend |
+|---|---|
+| `user:created` | Invalide le cache users + toast succes + notification ajoutee |
+| `user:updated` | Invalide le cache users + toast info + notification ajoutee |
+| `user:deleted` | Invalide le cache users + toast warning + notification ajoutee |
+
+### Tester
+
+1. Lancer le backend (`pnpm run start:dev` dans `mobile-dashboard-back`)
+2. Lancer le frontend (`pnpm dev` dans `mobile-dashboard-front`)
+3. Se connecter avec `admin@gmail.com` / `admin123`
+4. Ouvrir **2 onglets** du navigateur sur le dashboard
+5. Dans l'onglet 1 : creer un utilisateur
+6. Dans l'onglet 2 : la notification apparait automatiquement (toast + badge + sidebar)
+7. Dans F12 → Console : `[WS] Connected: xxx` confirme que le socket est connecte
+
 ## Architecture
 
 Le projet suit une **architecture par feature** (feature-based architecture). Chaque fonctionnalite (auth, users) est isolee dans son propre dossier sous `features/` avec ses composants, hooks, schemas et types. Cela permet une meilleure separation des responsabilites, une maintenance simplifiee et une scalabilite du projet.
@@ -80,11 +137,27 @@ features/
     hooks/                 # useUsers, useUser, useCreateUser, useUpdateUser, useDeleteUser
     schemas/               # CreateUserFormData, UpdateUserFormData
 service/
-  api.ts                   # Instance Axios avec intercepteur JWT
+  api.ts                   # Instance Axios avec intercepteur JWT (+ redirect 401)
   auth.service.ts          # Appels API authentification
-  user.service.ts          # Appels API utilisateurs
-components/ui/             # Composants shadcn/ui
-providers/                 # QueryProvider (React Query)
+  user.service.ts          # Appels API utilisateurs (avec fallback offline)
+  notification.service.ts  # Appels API notifications
+lib/
+  db.ts                    # Base IndexedDB (Dexie.js)
+  sync.ts                  # Synchronisation offline (replayQueue)
+  socket.ts                # Singleton Socket.IO client
+  i18n.ts                  # Traductions FR/EN
+hooks/
+  use-notifications.ts     # Hook notifications (API + local)
+components/
+  ui/                      # Composants shadcn/ui
+  theme-toggle.tsx         # Bouton dark/light
+  locale-toggle.tsx        # Bouton FR/EN
+providers/
+  query-provider.tsx       # React Query
+  theme-provider.tsx       # next-themes
+  locale-provider.tsx      # Multilingue
+  socket-provider.tsx      # Connexion WebSocket
+  notifications-provider.tsx # Context notifications
 types/                     # Types partages (User, CreateUserDto, UpdateUserDto)
 ```
 
@@ -145,7 +218,9 @@ L'application consomme les endpoints suivants du backend NestJS :
 | Methode | Route | Description | Auth |
 |---|---|---|---|
 | POST | `/api/auth/login` | Connexion | Non |
-| POST | `/api/users/register` | Inscription | Non |
+| POST | `/api/users/create` | Creer un utilisateur | Oui |
+| GET | `/api/notifications` | Liste des notifications | Oui |
+| PATCH | `/api/notifications/read` | Marquer comme lues | Oui |
 | GET | `/api/users/me` | Profil connecte | Oui |
 | GET | `/api/users/list` | Liste des utilisateurs | Oui |
 | GET | `/api/users/:id/details` | Detail d'un utilisateur | Oui |
