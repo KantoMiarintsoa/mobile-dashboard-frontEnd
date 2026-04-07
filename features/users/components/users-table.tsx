@@ -3,12 +3,14 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { RefreshCw, Plus, Eye, Pencil, Trash2 } from "lucide-react";
+import { RefreshCw, Plus, Eye, Pencil, Trash2, Search } from "lucide-react";
 import { useUsers } from "@/features/users/hooks/use-users";
 import { useDeleteUser } from "@/features/users/hooks/use-user-mutations";
+import { useMe } from "@/features/auth/hooks/use-me";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserFormModal } from "./user-form-modal";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -84,6 +86,7 @@ function TableSkeleton() {
 
 export function UsersTable() {
   const { data: users, isLoading, isFetching } = useUsers();
+  const { data: me } = useMe();
   const deleteUser = useDeleteUser();
   const queryClient = useQueryClient();
 
@@ -93,11 +96,22 @@ export function UsersTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const sortedUsers = useMemo(
-    () => users?.slice().sort((a, b) => a.id.localeCompare(b.id)),
-    [users],
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const filteredUsers = useMemo(() => {
+    const sorted = users?.slice().sort((a, b) => a.id.localeCompare(b.id));
+    if (!debouncedSearch) return sorted;
+    const q = debouncedSearch.toLowerCase();
+    return sorted?.filter(
+      (u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+    );
+  }, [users, debouncedSearch]);
 
   const isRefreshing = showSkeleton && isFetching;
 
@@ -145,9 +159,18 @@ export function UsersTable() {
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-lg font-bold sm:text-xl md:text-2xl">Utilisateurs</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
           <Button variant="outline" size="icon" title="Rafraichir" onClick={handleRefresh} disabled={isFetching}>
             <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
           </Button>
@@ -164,44 +187,50 @@ export function UsersTable() {
         <>
           {/* Mobile : cartes */}
           <div className="flex flex-col gap-3 md:hidden">
-            {sortedUsers?.length === 0 && (
+            {filteredUsers?.length === 0 && (
               <p className="text-center text-muted-foreground py-8">Aucun utilisateur</p>
             )}
-            {sortedUsers?.map((user) => (
-              <Card key={user.id}>
-                <CardHeader>
-                  <CardTitle className="text-base">{user.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-1 text-sm">
-                  <p className="text-muted-foreground truncate">{user.email}</p>
-                </CardContent>
-                <CardFooter className="flex gap-2">
-                  <Link href={`/users/${user.id}`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full gap-1.5">
-                      <Eye className="size-3.5" />
-                      Voir
+            {filteredUsers?.map((user) => {
+              const isMe = me?.id === user.id;
+              return (
+                <Card key={user.id}>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {user.name}
+                      {isMe && <span className="size-2.5 rounded-full bg-green-500 shrink-0" title="Connecte" />}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-1 text-sm">
+                    <p className="text-muted-foreground truncate">{user.email}</p>
+                  </CardContent>
+                  <CardFooter className="flex gap-2">
+                    <Link href={`/users/${user.id}`} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full gap-1.5">
+                        <Eye className="size-3.5" />
+                        Voir
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5"
+                      onClick={() => handleEdit(user)}
+                    >
+                      <Pencil className="size-3.5" />
+                      Modifier
                     </Button>
-                  </Link>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 gap-1.5"
-                    onClick={() => handleEdit(user)}
-                  >
-                    <Pencil className="size-3.5" />
-                    Modifier
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon-sm"
-                    title="Supprimer"
-                    onClick={() => handleDeleteClick(user)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                    <Button
+                      variant="destructive"
+                      size="icon-sm"
+                      title="Supprimer"
+                      onClick={() => handleDeleteClick(user)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
 
           {/* Desktop : table */}
@@ -215,33 +244,41 @@ export function UsersTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedUsers?.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1.5">
-                        <Link href={`/users/${user.id}`}>
-                          <Button variant="outline" size="icon-sm" title="Voir">
-                            <Eye className="size-3.5" />
+                {filteredUsers?.map((user) => {
+                  const isMe = me?.id === user.id;
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        <span className="flex items-center gap-2">
+                          {user.name}
+                          {isMe && <span className="size-2.5 rounded-full bg-green-500 shrink-0" title="Connecte" />}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <Link href={`/users/${user.id}`}>
+                            <Button variant="outline" size="icon-sm" title="Voir">
+                              <Eye className="size-3.5" />
+                            </Button>
+                          </Link>
+                          <Button variant="outline" size="icon-sm" title="Modifier" onClick={() => handleEdit(user)}>
+                            <Pencil className="size-3.5" />
                           </Button>
-                        </Link>
-                        <Button variant="outline" size="icon-sm" title="Modifier" onClick={() => handleEdit(user)}>
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon-sm"
-                          title="Supprimer"
-                          onClick={() => handleDeleteClick(user)}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {sortedUsers?.length === 0 && (
+                          <Button
+                            variant="destructive"
+                            size="icon-sm"
+                            title="Supprimer"
+                            onClick={() => handleDeleteClick(user)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filteredUsers?.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center text-muted-foreground">
                       Aucun utilisateur
