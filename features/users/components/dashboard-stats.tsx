@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityTimeline } from "./activity-timeline";
+import { ActivityChart } from "./activity-chart";
 
 function DashboardSkeleton() {
   return (
@@ -112,6 +113,8 @@ export function DashboardStats() {
           </Card>
         </div>
       )}
+
+      <ActivityChart />
 
       <ActivityTimeline />
     </div>

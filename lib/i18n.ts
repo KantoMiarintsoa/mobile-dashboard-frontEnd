@@ -47,9 +47,12 @@ const translations: Record<Locale, Record<string, string>> = {
     "dashboard.recent_users": "Utilisateurs récents",
     "dashboard.activity": "Activité récente",
     "dashboard.no_activity": "Aucune activité récente",
+    "dashboard.chart_title": "Activité des 7 derniers jours",
+    "dashboard.chart_created": "Créés",
+    "dashboard.chart_updated": "Modifiés",
+    "dashboard.chart_deleted": "Supprimés",
   },
   en: {
-    // Sidebar & nav
     "nav.dashboard": "Dashboard",
     "nav.users": "Users",
     "nav.logout": "Logout",
@@ -93,6 +96,10 @@ const translations: Record<Locale, Record<string, string>> = {
     "dashboard.recent_users": "Recent users",
     "dashboard.activity": "Recent activity",
     "dashboard.no_activity": "No recent activity",
+    "dashboard.chart_title": "Activity (last 7 days)",
+    "dashboard.chart_created": "Created",
+    "dashboard.chart_updated": "Updated",
+    "dashboard.chart_deleted": "Deleted",
   },
 };
 
