@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ActivityTimeline } from "./activity-timeline";
 
 function DashboardSkeleton() {
   return (
@@ -111,6 +112,8 @@ export function DashboardStats() {
           </Card>
         </div>
       )}
+
+      <ActivityTimeline />
     </div>
   );
 }

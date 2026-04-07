@@ -45,6 +45,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "dashboard.title": "Tableau de bord",
     "dashboard.total_users": "Total utilisateurs",
     "dashboard.recent_users": "Utilisateurs récents",
+    "dashboard.activity": "Activité récente",
+    "dashboard.no_activity": "Aucune activité récente",
   },
   en: {
     // Sidebar & nav
@@ -89,6 +91,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "dashboard.title": "Dashboard",
     "dashboard.total_users": "Total users",
     "dashboard.recent_users": "Recent users",
+    "dashboard.activity": "Recent activity",
+    "dashboard.no_activity": "No recent activity",
   },
 };
 
