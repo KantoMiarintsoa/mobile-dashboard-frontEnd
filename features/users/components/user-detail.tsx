@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useUser } from "@/features/users/hooks/use-users";
+import { useMe } from "@/features/auth/hooks/use-me";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserFormModal } from "./user-form-modal";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ function DetailSkeleton() {
 
 export function UserDetail({ id }: UserDetailProps) {
   const { data: user, isLoading, isFetching } = useUser(id);
+  const { data: me } = useMe();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(false);
@@ -100,6 +102,12 @@ export function UserDetail({ id }: UserDetailProps) {
                   <span className="font-medium text-muted-foreground">Email</span>
                   <span>{user.email}</span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-muted-foreground">Rôle</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${user.role === "ADMIN" ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"}`}>
+                    {user.role}
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-muted-foreground">Créé le</span>
                   <span>{new Date(user.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}</span>
@@ -110,9 +118,11 @@ export function UserDetail({ id }: UserDetailProps) {
                 </div>
               </div>
 
-              <Button className="mt-4 w-full" onClick={() => setEditOpen(true)}>
-                Modifier
-              </Button>
+              {me?.role === "ADMIN" && (
+                <Button className="mt-4 w-full" onClick={() => setEditOpen(true)}>
+                  Modifier
+                </Button>
+              )}
             </CardContent>
           </Card>
 

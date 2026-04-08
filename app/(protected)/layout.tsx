@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useOnlineSync } from "@/features/users/hooks/use-online-sync";
 import SocketProvider from "@/providers/socket-provider";
 import NotificationsProvider, { useNotificationsContext } from "@/providers/notifications-provider";
+import PresenceProvider from "@/providers/presence-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { useLocale } from "@/providers/locale-provider";
@@ -111,7 +112,9 @@ function NotificationsList() {
     <div className="mt-4 border-t pt-4">
       <div className="flex items-center gap-2 px-2 mb-2">
         <Bell className="size-4 text-muted-foreground" />
-        <span className="text-sm font-medium">{t("notifications.title")}</span>
+        <span className="text-sm font-medium">
+          {t("notifications.title")} <span className="text-xs text-muted-foreground">({notifications.length})</span>
+        </span>
         {unreadCount > 0 && (
           <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
             {unreadCount}
@@ -249,7 +252,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   return (
     <SocketProvider>
       <NotificationsProvider>
-        <LayoutContent>{children}</LayoutContent>
+        <PresenceProvider>
+          <LayoutContent>{children}</LayoutContent>
+        </PresenceProvider>
       </NotificationsProvider>
     </SocketProvider>
   );

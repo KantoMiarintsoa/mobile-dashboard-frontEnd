@@ -44,7 +44,7 @@ export function UserFormModal({ open, onClose, mode, user }: UserFormModalProps)
       editForm.reset({ name: user.name, email: user.email });
     }
     if (open && !isEdit) {
-      createForm.reset({ name: "", email: "", password: "" });
+      createForm.reset({ name: "", email: "", password: "", role: "VIEWER" });
     }
   }, [open, isEdit, user, editForm, createForm]);
 

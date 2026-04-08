@@ -3,10 +3,12 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { RefreshCw, Plus, Eye, Pencil, Trash2, Search } from "lucide-react";
+import { RefreshCw, Plus, Eye, Pencil, Trash2, Search, Download } from "lucide-react";
+import { saveAs } from "file-saver";
 import { useUsers } from "@/features/users/hooks/use-users";
 import { useDeleteUser } from "@/features/users/hooks/use-user-mutations";
 import { useMe } from "@/features/auth/hooks/use-me";
+import { usePresence } from "@/providers/presence-provider";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserFormModal } from "./user-form-modal";
 import { Button } from "@/components/ui/button";
@@ -87,6 +89,7 @@ function TableSkeleton() {
 export function UsersTable() {
   const { data: users, isLoading, isFetching } = useUsers();
   const { data: me } = useMe();
+  const { isOnline } = usePresence();
   const deleteUser = useDeleteUser();
   const queryClient = useQueryClient();
 
@@ -157,6 +160,17 @@ export function UsersTable() {
     queryClient.invalidateQueries({ queryKey: ["users"] });
   };
 
+  const handleExportCSV = () => {
+    if (!filteredUsers?.length) return;
+    const header = "Nom,Email,Rôle,Créé le";
+    const rows = filteredUsers.map((u) =>
+      `"${u.name}","${u.email}","${u.role}","${new Date(u.createdAt).toLocaleDateString("fr-FR")}"`
+    );
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, `utilisateurs_${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -174,10 +188,16 @@ export function UsersTable() {
           <Button variant="outline" size="icon" title="Rafraichir" onClick={handleRefresh} disabled={isFetching}>
             <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
           </Button>
-          <Button size="sm" className="gap-1.5" onClick={handleCreate}>
-            <Plus className="size-4" />
-            <span className="hidden sm:inline">Ajouter</span>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExportCSV} disabled={!filteredUsers?.length}>
+            <Download className="size-4" />
+            <span className="hidden sm:inline">CSV</span>
           </Button>
+          {me?.role === "ADMIN" && (
+            <Button size="sm" className="gap-1.5" onClick={handleCreate}>
+              <Plus className="size-4" />
+              <span className="hidden sm:inline">Ajouter</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -197,11 +217,14 @@ export function UsersTable() {
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
                       {user.name}
-                      {isMe && <span className="size-2.5 rounded-full bg-green-500 shrink-0" title="Connecte" />}
+                      {isOnline(user.id) && <span className="size-2.5 rounded-full bg-green-500 shrink-0 animate-pulse" title="En ligne" />}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-1 text-sm">
                     <p className="text-muted-foreground truncate">{user.email}</p>
+                    <span className={`inline-block w-fit text-xs px-2 py-0.5 rounded-full ${user.role === "ADMIN" ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"}`}>
+                      {user.role}
+                    </span>
                   </CardContent>
                   <CardFooter className="flex gap-2">
                     <Link href={`/users/${user.id}`} className="flex-1">
@@ -210,23 +233,27 @@ export function UsersTable() {
                         Voir
                       </Button>
                     </Link>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 gap-1.5"
-                      onClick={() => handleEdit(user)}
-                    >
-                      <Pencil className="size-3.5" />
-                      Modifier
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon-sm"
-                      title="Supprimer"
-                      onClick={() => handleDeleteClick(user)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                    {me?.role === "ADMIN" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 gap-1.5"
+                          onClick={() => handleEdit(user)}
+                        >
+                          <Pencil className="size-3.5" />
+                          Modifier
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon-sm"
+                          title="Supprimer"
+                          onClick={() => handleDeleteClick(user)}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </>
+                    )}
                   </CardFooter>
                 </Card>
               );
@@ -240,6 +267,7 @@ export function UsersTable() {
                 <TableRow>
                   <TableHead>Nom</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Rôle</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -251,10 +279,15 @@ export function UsersTable() {
                       <TableCell className="font-medium">
                         <span className="flex items-center gap-2">
                           {user.name}
-                          {isMe && <span className="size-2.5 rounded-full bg-green-500 shrink-0" title="Connecte" />}
+                          {isOnline(user.id) && <span className="size-2.5 rounded-full bg-green-500 shrink-0 animate-pulse" title="En ligne" />}
                         </span>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${user.role === "ADMIN" ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"}`}>
+                          {user.role}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1.5">
                           <Link href={`/users/${user.id}`}>
@@ -262,17 +295,21 @@ export function UsersTable() {
                               <Eye className="size-3.5" />
                             </Button>
                           </Link>
-                          <Button variant="outline" size="icon-sm" title="Modifier" onClick={() => handleEdit(user)}>
-                            <Pencil className="size-3.5" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon-sm"
-                            title="Supprimer"
-                            onClick={() => handleDeleteClick(user)}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
+                          {me?.role === "ADMIN" && (
+                            <>
+                              <Button variant="outline" size="icon-sm" title="Modifier" onClick={() => handleEdit(user)}>
+                                <Pencil className="size-3.5" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="icon-sm"
+                                title="Supprimer"
+                                onClick={() => handleDeleteClick(user)}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -280,7 +317,7 @@ export function UsersTable() {
                 })}
                 {filteredUsers?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
                       Aucun utilisateur
                     </TableCell>
                   </TableRow>

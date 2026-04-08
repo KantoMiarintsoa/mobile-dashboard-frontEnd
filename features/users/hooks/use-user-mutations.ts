@@ -2,33 +2,36 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { userService } from "../../../service/user.service";
 import { CreateUserDto, UpdateUserDto } from "../../../types/user.types";
 
-export function useCreateUser() {
+function useInvalidateAll() {
   const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["activity-stats"] });
+  };
+}
+
+export function useCreateUser() {
+  const invalidateAll = useInvalidateAll();
   return useMutation({
     mutationFn: (data: CreateUserDto) => userService.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
+    onSuccess: invalidateAll,
   });
 }
 
 export function useUpdateUser() {
-  const queryClient = useQueryClient();
+  const invalidateAll = useInvalidateAll();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateUserDto }) =>
       userService.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
+    onSuccess: invalidateAll,
   });
 }
 
 export function useDeleteUser() {
-  const queryClient = useQueryClient();
+  const invalidateAll = useInvalidateAll();
   return useMutation({
     mutationFn: (id: string) => userService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
+    onSuccess: invalidateAll,
   });
 }

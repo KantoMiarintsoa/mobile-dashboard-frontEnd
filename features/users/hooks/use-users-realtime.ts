@@ -3,13 +3,11 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocket } from "@/providers/socket-provider";
-import { useNotificationsContext } from "@/providers/notifications-provider";
 import { toast } from "sonner";
 
 export function useUsersRealtime() {
   const socket = useSocket();
   const queryClient = useQueryClient();
-  const { add } = useNotificationsContext();
 
   useEffect(() => {
     if (!socket) return;
@@ -17,27 +15,24 @@ export function useUsersRealtime() {
     const onCreated = (data: { name?: string; notification?: { message: string } }) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      const msg = data.notification?.message || `User ${data.name} created`;
-      toast.success(msg);
-      add(msg, "created");
+      queryClient.invalidateQueries({ queryKey: ["activity-stats"] });
+      toast.success(data.notification?.message || `User ${data.name} created`);
     };
 
     const onUpdated = (data: { name?: string; notification?: { message: string } }) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      const msg = data.notification?.message || `User ${data.name} updated`;
-      toast.info(msg);
-      add(msg, "updated");
+      queryClient.invalidateQueries({ queryKey: ["activity-stats"] });
+      toast.info(data.notification?.message || `User ${data.name} updated`);
     };
 
-    const onDeleted = (data: { id: string; actorName?: string; targetName?: string }) => {
+    const onDeleted = (data: { id: string; actorName?: string; targetName?: string; notification?: { message: string } }) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      const msg = data.actorName && data.targetName
-        ? `${data.actorName} deleted ${data.targetName}`
-        : "A user has been deleted";
+      queryClient.invalidateQueries({ queryKey: ["activity-stats"] });
+      const msg = data.notification?.message
+        || (data.actorName && data.targetName ? `${data.actorName} deleted ${data.targetName}` : "A user has been deleted");
       toast.warning(msg);
-      add(msg, "deleted");
     };
 
     socket.on("user:created", onCreated);
@@ -49,5 +44,5 @@ export function useUsersRealtime() {
       socket.off("user:updated", onUpdated);
       socket.off("user:deleted", onDeleted);
     };
-  }, [socket, queryClient, add]);
+  }, [socket, queryClient]);
 }
