@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Cookies from "js-cookie";
-import { LayoutDashboard, Users, LogOut, Menu, X, Bell, UserPlus, UserPen, UserX, Trash2 } from "lucide-react";
+import { LayoutDashboard, Users, LogOut, Menu, X, Bell, BellRing, BellOff, UserPlus, UserPen, UserX, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOnlineSync } from "@/features/users/hooks/use-online-sync";
 import SocketProvider from "@/providers/socket-provider";
@@ -13,6 +13,7 @@ import PresenceProvider from "@/providers/presence-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { useLocale } from "@/providers/locale-provider";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 const navItems = [
   { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
@@ -24,6 +25,32 @@ const notificationIcon = {
   updated: UserPen,
   deleted: UserX,
 };
+
+function PushToggle() {
+  const { isSupported, isSubscribed, permission, subscribe, unsubscribe } = usePushNotifications();
+
+  if (!isSupported) return null;
+
+  const handleClick = () => {
+    if (isSubscribed) {
+      unsubscribe();
+    } else {
+      subscribe();
+    }
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={handleClick}
+      title={isSubscribed ? "Désactiver les notifications push" : "Activer les notifications push"}
+      disabled={permission === "denied"}
+    >
+      {isSubscribed ? <BellRing className="size-5 text-primary" /> : <BellOff className="size-5" />}
+    </Button>
+  );
+}
 
 function NotificationBell() {
   const { notifications, unreadCount, markAllRead, clear } = useNotificationsContext();
@@ -179,6 +206,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-1">
           <LocaleToggle />
           <ThemeToggle />
+          <PushToggle />
           <NotificationBell />
           <Button variant="ghost" size="icon" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -240,6 +268,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <header className="hidden md:flex items-center justify-end gap-2 border-b bg-card px-6 py-3">
           <LocaleToggle />
           <ThemeToggle />
+          <PushToggle />
           <NotificationBell />
         </header>
         <main className="flex-1 p-3 sm:p-4 md:p-6">{children}</main>
