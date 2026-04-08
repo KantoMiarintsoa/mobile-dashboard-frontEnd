@@ -92,9 +92,9 @@ export function LoginForm() {
         </form>
 
         <p className="text-sm text-center text-muted-foreground mt-6">
-          Pas encore de compte ?{" "}
+          {t("login.no_account")}{" "}
           <Link href="/register" className="text-primary font-medium hover:underline">
-            S&apos;inscrire
+            {t("login.register_link")}
           </Link>
         </p>
       </CardContent>
