@@ -8,6 +8,7 @@ interface NotificationsContextType {
   unreadCount: number;
   add: (message: string, type: Notification["type"]) => void;
   markAllRead: () => void;
+  remove: (id: string) => void;
   clear: () => void;
 }
 

@@ -25,4 +25,10 @@ export const notificationService = {
 
   markAllRead: () =>
     api.patch("/notifications/read").then((res) => res.data),
+
+  remove: (id: string) =>
+    api.delete(`/notifications/${id}`).then((res) => res.data),
+
+  removeAll: () =>
+    api.delete("/notifications").then((res) => res.data),
 };

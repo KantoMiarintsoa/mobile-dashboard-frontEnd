@@ -15,7 +15,9 @@ export function ActivityChart() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["activity-stats"],
     queryFn: () => notificationService.getStats(7),
-    refetchInterval: 60000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchInterval: 30000,
   });
 
   const chartData = stats?.map((s) => ({

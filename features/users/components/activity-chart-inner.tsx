@@ -24,7 +24,7 @@ export default function ActivityChartInner({ data, t }: ChartProps) {
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#6b7280" }} />
           <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#6b7280" }} width={30} />
-          <Tooltip />
+          <Tooltip content={() => null} />
           <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
           <Area
             type="monotone"

@@ -6,8 +6,11 @@ function useInvalidateAll() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: ["users"] });
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    queryClient.invalidateQueries({ queryKey: ["activity-stats"] });
+    // Small delay to let the backend create the notification before refetching
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["activity-stats"] });
+    }, 500);
   };
 }
 

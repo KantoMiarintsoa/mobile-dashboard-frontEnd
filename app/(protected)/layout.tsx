@@ -6,6 +6,16 @@ import Link from "next/link";
 import Cookies from "js-cookie";
 import { LayoutDashboard, Users, LogOut, Menu, X, Bell, BellRing, BellOff, UserPlus, UserPen, UserX, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useOnlineSync } from "@/features/users/hooks/use-online-sync";
 import SocketProvider from "@/providers/socket-provider";
 import NotificationsProvider, { useNotificationsContext } from "@/providers/notifications-provider";
@@ -53,9 +63,10 @@ function PushToggle() {
 }
 
 function NotificationBell() {
-  const { notifications, unreadCount, markAllRead, clear } = useNotificationsContext();
+  const { notifications, unreadCount, markAllRead, remove, clear } = useNotificationsContext();
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
     if (open) markAllRead();
@@ -94,7 +105,12 @@ function NotificationBell() {
               )}
             </h3>
             {notifications.length > 0 && (
-              <Button variant="ghost" size="sm" className="h-auto p-1 text-xs text-muted-foreground" onClick={clear}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-1 text-xs text-muted-foreground"
+                onClick={() => setConfirmClear(true)}
+              >
                 <Trash2 className="size-3 mr-1" />
                 {t("notifications.clear")}
               </Button>
@@ -109,7 +125,7 @@ function NotificationBell() {
                 return (
                   <div
                     key={n.id}
-                    className={`flex items-start gap-3 border-b px-4 py-3 last:border-0 ${!n.read ? "bg-muted/50" : ""}`}
+                    className={`flex items-start gap-3 border-b px-4 py-3 last:border-0 group ${!n.read ? "bg-muted/50" : ""}`}
                   >
                     <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                     <div className="flex-1 min-w-0">
@@ -118,7 +134,14 @@ function NotificationBell() {
                         {n.timestamp.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
-                    {!n.read && <span className="mt-1 size-2 rounded-full bg-blue-500 shrink-0" />}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => { e.stopPropagation(); remove(n.id); }}
+                    >
+                      <X className="size-3" />
+                    </Button>
                   </div>
                 );
               })
@@ -126,6 +149,27 @@ function NotificationBell() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("notifications.confirm_clear_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("notifications.confirm_clear")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("notifications.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                clear();
+                setConfirmClear(false);
+              }}
+            >
+              {t("notifications.clear")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

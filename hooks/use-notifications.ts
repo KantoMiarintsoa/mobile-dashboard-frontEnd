@@ -31,7 +31,6 @@ export function useNotifications() {
   const [localNotifications, setLocalNotifications] = useState<Notification[]>([]);
   const queryClient = useQueryClient();
 
-  // Load from API via React Query
   const { data: apiNotifications = [] } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
@@ -41,7 +40,6 @@ export function useNotifications() {
     refetchInterval: 30000,
   });
 
-  // Merge: local (realtime) notifications on top, then API ones (avoid duplicates)
   const notifications = [
     ...localNotifications,
     ...apiNotifications.filter(
@@ -70,12 +68,21 @@ export function useNotifications() {
     notificationService.markAllRead().catch(() => {});
   }, [queryClient]);
 
+  const remove = useCallback((id: string) => {
+    setLocalNotifications((prev) => prev.filter((n) => n.id !== id));
+    queryClient.setQueryData(["notifications"], (old: Notification[] | undefined) =>
+      old?.filter((n) => n.id !== id) ?? []
+    );
+    notificationService.remove(id).catch(() => {});
+  }, [queryClient]);
+
   const clear = useCallback(() => {
     setLocalNotifications([]);
     queryClient.setQueryData(["notifications"], []);
+    notificationService.removeAll().catch(() => {});
   }, [queryClient]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  return { notifications, unreadCount, add, markAllRead, clear };
+  return { notifications, unreadCount, add, markAllRead, remove, clear };
 }
