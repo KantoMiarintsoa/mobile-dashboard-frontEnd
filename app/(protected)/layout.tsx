@@ -80,8 +80,8 @@ function NotificationBell() {
       const target = e.target as HTMLElement;
       if (!target.closest("[data-notification-bell]")) setOpen(false);
     };
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
   return (
