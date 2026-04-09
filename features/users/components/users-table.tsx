@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { RefreshCw, Plus, Eye, Pencil, Trash2, Search, Download, Ban, CheckCircle } from "lucide-react";
+import { RefreshCw, Plus, Eye, Pencil, Trash2, Search, Download, Ban, CheckCircle, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react";
 import { saveAs } from "file-saver";
 import { useUsers } from "@/features/users/hooks/use-users";
 import { useDeleteUser, useDeleteAllUsers, useToggleActive } from "@/features/users/hooks/use-user-mutations";
@@ -14,6 +14,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { UserFormModal } from "./user-form-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -102,6 +109,10 @@ export function UsersTable() {
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "email" | "role" | "createdAt">("name");
+  const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [filterRole, setFilterRole] = useState<"all" | "ADMIN" | "VIEWER">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "disabled">("all");
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -109,13 +120,24 @@ export function UsersTable() {
   }, [search]);
 
   const filteredUsers = useMemo(() => {
-    const sorted = users?.slice().sort((a, b) => a.id.localeCompare(b.id));
-    if (!debouncedSearch) return sorted;
-    const q = debouncedSearch.toLowerCase();
-    return sorted?.filter(
-      (u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
-    );
-  }, [users, debouncedSearch]);
+    let list = users?.slice() ?? [];
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
+      list = list.filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+    }
+    if (filterRole !== "all") {
+      list = list.filter((u) => u.role === filterRole);
+    }
+    if (filterStatus !== "all") {
+      list = list.filter((u) => filterStatus === "active" ? u.active : !u.active);
+    }
+    list.sort((a, b) => {
+      const aVal = String(a[sortBy] ?? "").toLowerCase();
+      const bVal = String(b[sortBy] ?? "").toLowerCase();
+      return order === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+    return list;
+  }, [users, debouncedSearch, sortBy, order, filterRole, filterStatus]);
 
   const isRefreshing = showSkeleton && isFetching;
 
@@ -171,6 +193,27 @@ export function UsersTable() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input placeholder={t("users.search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
           </div>
+          <Select value={filterRole} onValueChange={(v) => setFilterRole(v as typeof filterRole)}>
+            <SelectTrigger className="w-auto gap-1.5 h-9 px-2">
+              <Filter className="size-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="all">{t("users.filter_all_roles")}</SelectItem>
+              <SelectItem value="ADMIN">ADMIN</SelectItem>
+              <SelectItem value="VIEWER">VIEWER</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}>
+            <SelectTrigger className="w-auto gap-1.5 h-9 px-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="all">{t("users.filter_all_status")}</SelectItem>
+              <SelectItem value="active">{t("users.active")}</SelectItem>
+              <SelectItem value="disabled">{t("users.disabled")}</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" size="icon" title={t("users.refresh")} onClick={handleRefresh} disabled={isFetching}>
             <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
           </Button>
@@ -252,9 +295,21 @@ export function UsersTable() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t("users.name")}</TableHead>
-                  <TableHead>{t("users.email")}</TableHead>
-                  <TableHead>{t("users.role")}</TableHead>
+                  {(["name", "email", "role"] as const).map((field) => (
+                    <TableHead
+                      key={field}
+                      className="cursor-pointer select-none hover:text-foreground"
+                      onClick={() => {
+                        if (sortBy === field) setOrder((o) => o === "asc" ? "desc" : "asc");
+                        else { setSortBy(field); setOrder("asc"); }
+                      }}
+                    >
+                      <span className="flex items-center gap-1">
+                        {t(`users.${field}`)}
+                        {sortBy === field ? (order === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />) : <ArrowUpDown className="size-3 text-muted-foreground" />}
+                      </span>
+                    </TableHead>
+                  ))}
                   <TableHead className="text-right">{t("users.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
