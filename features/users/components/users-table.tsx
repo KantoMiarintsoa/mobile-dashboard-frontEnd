@@ -3,10 +3,10 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { RefreshCw, Plus, Eye, Pencil, Trash2, Search, Download } from "lucide-react";
+import { RefreshCw, Plus, Eye, Pencil, Trash2, Search, Download, Ban, CheckCircle } from "lucide-react";
 import { saveAs } from "file-saver";
 import { useUsers } from "@/features/users/hooks/use-users";
-import { useDeleteUser, useDeleteAllUsers } from "@/features/users/hooks/use-user-mutations";
+import { useDeleteUser, useDeleteAllUsers, useToggleActive } from "@/features/users/hooks/use-user-mutations";
 import { useMe } from "@/features/auth/hooks/use-me";
 import { usePresence } from "@/providers/presence-provider";
 import { useLocale } from "@/providers/locale-provider";
@@ -90,6 +90,7 @@ export function UsersTable() {
   const { t } = useLocale();
   const deleteUser = useDeleteUser();
   const deleteAllUsers = useDeleteAllUsers();
+  const toggleActive = useToggleActive();
   const queryClient = useQueryClient();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -135,6 +136,13 @@ export function UsersTable() {
   };
 
   const handleRefresh = () => { setShowSkeleton(true); queryClient.invalidateQueries({ queryKey: ["users"] }); };
+
+  const handleToggleActive = (user: { id: string; active: boolean }) => {
+    toggleActive.mutate(user.id, {
+      onSuccess: () => { toast.success(user.active ? t("users.disable_success") : t("users.enable_success")); },
+      onError: () => { toast.error(t("users.disable_error")); },
+    });
+  };
 
   const handleDeleteAllConfirm = () => {
     deleteAllUsers.mutate(undefined, {
@@ -194,39 +202,49 @@ export function UsersTable() {
             {filteredUsers?.length === 0 && (
               <p className="text-center text-muted-foreground py-8">{t("users.none")}</p>
             )}
-            {filteredUsers?.map((user) => (
-              <Card key={user.id}>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    {user.name}
-                    {isOnline(user.id) && <span className="size-2.5 rounded-full bg-green-500 shrink-0 animate-pulse" title={t("users.online")} />}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-1 text-sm">
-                  <p className="text-muted-foreground truncate">{user.email}</p>
-                  <span className={`inline-block w-fit text-xs px-2 py-0.5 rounded-full ${user.role === "ADMIN" ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"}`}>
-                    {user.role}
-                  </span>
-                </CardContent>
-                <CardFooter className="flex gap-2">
-                  <Link href={`/users/${user.id}`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full gap-1.5">
-                      <Eye className="size-3.5" />{t("users.view")}
-                    </Button>
-                  </Link>
-                  {me?.role === "ADMIN" && (
-                    <>
-                      <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => handleEdit(user)}>
-                        <Pencil className="size-3.5" />{t("users.edit")}
+            {filteredUsers?.map((user) => {
+              const isMe = me?.id === user.id;
+              return (
+                <Card key={user.id} className={!user.active ? "opacity-50" : ""}>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {user.name}
+                      {isOnline(user.id) && <span className="size-2.5 rounded-full bg-green-500 shrink-0 animate-pulse" title={t("users.online")} />}
+                      {!user.active && <span className="text-xs text-red-500">({t("users.disabled")})</span>}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-1 text-sm">
+                    <p className="text-muted-foreground truncate">{user.email}</p>
+                    <span className={`inline-block w-fit text-xs px-2 py-0.5 rounded-full ${user.role === "ADMIN" ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"}`}>
+                      {user.role}
+                    </span>
+                  </CardContent>
+                  <CardFooter className="flex gap-2">
+                    <Link href={`/users/${user.id}`} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full gap-1.5">
+                        <Eye className="size-3.5" />{t("users.view")}
                       </Button>
-                      <Button variant="destructive" size="icon-sm" title={t("users.delete")} onClick={() => handleDeleteClick(user)}>
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </>
-                  )}
-                </CardFooter>
-              </Card>
-            ))}
+                    </Link>
+                    {me?.role === "ADMIN" && (
+                      <>
+                        <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => handleEdit(user)}>
+                          <Pencil className="size-3.5" />{t("users.edit")}
+                        </Button>
+                        {isMe ? (
+                          <Button variant="outline" size="icon-sm" title={user.active ? t("users.disable") : t("users.enable")} onClick={() => handleToggleActive(user)}>
+                            {user.active ? <Ban className="size-3.5" /> : <CheckCircle className="size-3.5" />}
+                          </Button>
+                        ) : (
+                          <Button variant="destructive" size="icon-sm" title={t("users.delete")} onClick={() => handleDeleteClick(user)}>
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
 
           {/* Desktop */}
@@ -241,39 +259,49 @@ export function UsersTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers?.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      <span className="flex items-center gap-2">
-                        {user.name}
-                        {isOnline(user.id) && <span className="size-2.5 rounded-full bg-green-500 shrink-0 animate-pulse" title={t("users.online")} />}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                    <TableCell>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${user.role === "ADMIN" ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"}`}>
-                        {user.role}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1.5">
-                        <Link href={`/users/${user.id}`}>
-                          <Button variant="outline" size="icon-sm" title={t("users.view")}><Eye className="size-3.5" /></Button>
-                        </Link>
-                        {me?.role === "ADMIN" && (
-                          <>
-                            <Button variant="outline" size="icon-sm" title={t("users.edit")} onClick={() => handleEdit(user)}>
-                              <Pencil className="size-3.5" />
-                            </Button>
-                            <Button variant="destructive" size="icon-sm" title={t("users.delete")} onClick={() => handleDeleteClick(user)}>
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredUsers?.map((user) => {
+                  const isMe = me?.id === user.id;
+                  return (
+                    <TableRow key={user.id} className={!user.active ? "opacity-50" : ""}>
+                      <TableCell className="font-medium">
+                        <span className="flex items-center gap-2">
+                          {user.name}
+                          {isOnline(user.id) && <span className="size-2.5 rounded-full bg-green-500 shrink-0 animate-pulse" title={t("users.online")} />}
+                          {!user.active && <span className="text-xs text-red-500">({t("users.disabled")})</span>}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${user.role === "ADMIN" ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"}`}>
+                          {user.role}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <Link href={`/users/${user.id}`}>
+                            <Button variant="outline" size="icon-sm" title={t("users.view")}><Eye className="size-3.5" /></Button>
+                          </Link>
+                          {me?.role === "ADMIN" && (
+                            <>
+                              <Button variant="outline" size="icon-sm" title={t("users.edit")} onClick={() => handleEdit(user)}>
+                                <Pencil className="size-3.5" />
+                              </Button>
+                              {isMe ? (
+                                <Button variant="outline" size="icon-sm" title={user.active ? t("users.disable") : t("users.enable")} onClick={() => handleToggleActive(user)}>
+                                  {user.active ? <Ban className="size-3.5" /> : <CheckCircle className="size-3.5" />}
+                                </Button>
+                              ) : (
+                                <Button variant="destructive" size="icon-sm" title={t("users.delete")} onClick={() => handleDeleteClick(user)}>
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {filteredUsers?.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">{t("users.none")}</TableCell>

@@ -84,6 +84,11 @@ export const userService = {
     await db.users.delete(id);
   },
 
+  toggleActive: async (id: string) => {
+    const res = await api.put(`/users/${id}/toggle-active`);
+    return res.data;
+  },
+
   deleteAll: async (): Promise<void> => {
     await api.delete("/users/delete-all");
     await db.users.clear();

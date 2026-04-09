@@ -39,6 +39,14 @@ export function useDeleteUser() {
   });
 }
 
+export function useToggleActive() {
+  const invalidateAll = useInvalidateAll();
+  return useMutation({
+    mutationFn: (id: string) => userService.toggleActive(id),
+    onSuccess: invalidateAll,
+  });
+}
+
 export function useDeleteAllUsers() {
   const invalidateAll = useInvalidateAll();
   return useMutation({

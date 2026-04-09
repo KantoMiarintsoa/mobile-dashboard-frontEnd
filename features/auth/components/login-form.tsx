@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Cookies from "js-cookie";
@@ -20,7 +21,8 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useLocale();
-  const { mutate, isPending, isError } = useLogin();
+  const { mutate, isPending } = useLogin();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -34,12 +36,9 @@ export function LoginForm() {
   });
 
   const onSubmit = (data: LoginFormData) => {
-    const formData = new FormData();
-    formData.append("email", data.email);
-    formData.append("password", data.password);
-
+    setErrorMessage(null);
     mutate(
-      { email: formData.get("email") as string, password: formData.get("password") as string },
+      { email: data.email, password: data.password },
       {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onSuccess: (response: any) => {
@@ -48,6 +47,15 @@ export function LoginForm() {
             Cookies.set("token", token, { expires: 7 });
           }
           router.push("/dashboard");
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onError: (error: any) => {
+          const message = error?.response?.data?.message;
+          if (message === "ACCOUNT_DISABLED") {
+            setErrorMessage(t("login.account_disabled"));
+          } else {
+            setErrorMessage(t("login.error"));
+          }
         },
       },
     );
@@ -83,8 +91,8 @@ export function LoginForm() {
             />
             {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
           </div>
-          {isError && (
-            <p className="text-sm text-red-500 text-center">{t("login.error")}</p>
+          {errorMessage && (
+            <p className="text-sm text-red-500 text-center">{errorMessage}</p>
           )}
           <Button type="submit" className="w-full h-11 text-base mt-2" disabled={isPending}>
             {isPending ? t("login.loading") : t("login.submit")}
