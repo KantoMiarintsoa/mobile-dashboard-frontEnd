@@ -35,6 +35,7 @@ export const userService = {
         name: data.name,
         email: data.email,
         role: "",
+        active: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
