@@ -38,3 +38,11 @@ export function useDeleteUser() {
     onSuccess: invalidateAll,
   });
 }
+
+export function useDeleteAllUsers() {
+  const invalidateAll = useInvalidateAll();
+  return useMutation({
+    mutationFn: () => userService.deleteAll(),
+    onSuccess: invalidateAll,
+  });
+}

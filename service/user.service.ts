@@ -83,4 +83,9 @@ export const userService = {
     }
     await db.users.delete(id);
   },
+
+  deleteAll: async (): Promise<void> => {
+    await api.delete("/users/delete-all");
+    await db.users.clear();
+  },
 };

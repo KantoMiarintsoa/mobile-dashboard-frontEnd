@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { RefreshCw, Plus, Eye, Pencil, Trash2, Search, Download } from "lucide-react";
 import { saveAs } from "file-saver";
 import { useUsers } from "@/features/users/hooks/use-users";
-import { useDeleteUser } from "@/features/users/hooks/use-user-mutations";
+import { useDeleteUser, useDeleteAllUsers } from "@/features/users/hooks/use-user-mutations";
 import { useMe } from "@/features/auth/hooks/use-me";
 import { usePresence } from "@/providers/presence-provider";
 import { useLocale } from "@/providers/locale-provider";
@@ -89,6 +89,7 @@ export function UsersTable() {
   const { isOnline } = usePresence();
   const { t } = useLocale();
   const deleteUser = useDeleteUser();
+  const deleteAllUsers = useDeleteAllUsers();
   const queryClient = useQueryClient();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -97,6 +98,7 @@ export function UsersTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -134,6 +136,13 @@ export function UsersTable() {
 
   const handleRefresh = () => { setShowSkeleton(true); queryClient.invalidateQueries({ queryKey: ["users"] }); };
 
+  const handleDeleteAllConfirm = () => {
+    deleteAllUsers.mutate(undefined, {
+      onSuccess: () => { toast.success(t("users.delete_all_success")); setDeleteAllDialogOpen(false); },
+      onError: () => { toast.error(t("users.delete_all_error")); },
+    });
+  };
+
   const handleExportCSV = () => {
     if (!filteredUsers?.length) return;
     const header = `${t("users.name")},${t("users.email")},${t("users.role")},${t("users.created_at")}`;
@@ -162,10 +171,16 @@ export function UsersTable() {
             <span className="hidden sm:inline">CSV</span>
           </Button>
           {me?.role === "ADMIN" && (
-            <Button size="sm" className="gap-1.5" onClick={handleCreate}>
-              <Plus className="size-4" />
-              <span className="hidden sm:inline">{t("users.add")}</span>
-            </Button>
+            <>
+              <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setDeleteAllDialogOpen(true)} disabled={!filteredUsers?.length}>
+                <Trash2 className="size-4" />
+                <span className="hidden sm:inline">{t("users.delete_all")}</span>
+              </Button>
+              <Button size="sm" className="gap-1.5" onClick={handleCreate}>
+                <Plus className="size-4" />
+                <span className="hidden sm:inline">{t("users.add")}</span>
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -284,6 +299,21 @@ export function UsersTable() {
             <AlertDialogCancel onClick={() => setUserToDelete(null)}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={handleDeleteConfirm} disabled={deleteUser.isPending}>
               {deleteUser.isPending ? t("users.deleting") : t("users.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("users.delete_all_confirm_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("users.delete_all_confirm")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleDeleteAllConfirm} disabled={deleteAllUsers.isPending}>
+              {deleteAllUsers.isPending ? t("users.deleting") : t("users.delete_all")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
